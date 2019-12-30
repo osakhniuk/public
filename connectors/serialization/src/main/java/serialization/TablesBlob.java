@@ -2,6 +2,7 @@ package serialization;
 
 import java.util.*;
 import com.google.gson.*;
+import java.io.IOException;
 import com.google.gson.annotations.SerializedName;
 
 
@@ -29,11 +30,11 @@ public class TablesBlob {
     transient int length;
 
     /// Class constructors.
-    public TablesBlob(DataFrame[] tables) {
+    public TablesBlob(String path, DataFrame[] tables) throws IOException {
         type = "TablesBlob";
         version = BufferAccessor.VERSION;
 
-        buffer = new BufferAccessor();
+        buffer = new BufferAccessor(path);
         this.tables = new TableInfo[tables.length];
         tablesOffsets = new int[tables.length];
         columnsOffsets = new int[tables.length][];
@@ -48,7 +49,7 @@ public class TablesBlob {
     }
 
     /// Serializes the [TablesBlob] into array of bytes [Uint8List].
-    public byte[] toByteArray() {
+    public byte[] toByteArray() throws IOException {
         GsonBuilder builder = new GsonBuilder();
         Gson gson = builder.create();
 
@@ -59,8 +60,8 @@ public class TablesBlob {
 
         // Offsets (tables, columns)
         buffer.writeInt32List(tablesOffsets);
-        for (int n = 0; n < columnsOffsets.length; n++)
-            buffer.writeInt32List(columnsOffsets[n]);
+        for (int[] columnOffsets : columnsOffsets)
+            buffer.writeInt32List(columnOffsets);
 
         // Version string, 24 bytes
         String versionStr = (version.length() >= 14)

@@ -1,53 +1,47 @@
 package serialization;
 
+import java.io.IOException;
+import java.io.FileInputStream;
+
 
 // Float column.
 public class FloatColumn extends Column<Float> {
     private static final String TYPE = Types.FLOAT;
     static final double None = 2.6789344063684636e-34;
 
-    private float[] data;
-
     public String getType() {
         return TYPE;
     }
 
-    public FloatColumn() {
-        data = new float[100];
+    public FloatColumn(String path) throws IOException {
+        super(path);
     }
 
-    public FloatColumn(Float[] values) {
-        data = new float[100];
+    public FloatColumn(String path, Float[] values) throws IOException {
+        this(path);
         addAll(values);
     }
 
-    public void encode(BufferAccessor buf) {
+    public void encode(BufferAccessor buf) throws IOException {
+        close();
         buf.writeInt32(1);  // Encoder ID
         buf.writeInt8((byte)0);   // Archive
-        buf.writeFloat32List(data, 0, length);
+        buf.writeFloat32Stream(new FileInputStream(path), length);
     }
 
-    public void add(Float value) {
-        ensureSpace(1);
-        data[length++] = (value != null) ? value : (float)None;
+    public void add(Float value) throws IOException {
+        stream.writeFloat((value != null) ? value : (float)None);
+        length++;
     }
 
-    public void addAll(Float[] values) {
-        ensureSpace(values.length);
-        for (int n = 0; n < values.length; n++)
-            data[length++] = (values[n] != null) ? values[n] : (float)None;
+    public void addAll(Float[] values) throws IOException {
+        for (Float value : values)
+            stream.writeFloat((value != null) ? value : (float)None);
+        length += values.length;
     }
 
     @Override
     public long memoryInBytes() {
-        return data.length * 4;
-    }
-
-    private void ensureSpace(int extraLength) {
-        if (length + extraLength > data.length) {
-            float[] newData = new float[data.length * 2 + Math.max(0, length + extraLength - data.length * 2)];
-            System.arraycopy(data, 0, newData, 0, data.length);
-            data = newData;
-        }
+        return length * 4;
     }
 }

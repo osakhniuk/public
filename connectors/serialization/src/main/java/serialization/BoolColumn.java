@@ -1,5 +1,7 @@
 package serialization;
 
+import java.io.IOException;
+
 
 // Bool column.
 public class BoolColumn extends Column<Boolean> {
@@ -20,7 +22,7 @@ public class BoolColumn extends Column<Boolean> {
         addAll(values);
     }
 
-    public void encode(BufferAccessor buf) {
+    public void encode(BufferAccessor buf) throws IOException {
         buf.writeInt32(1);
         buf.writeInt64(length);
         buf.writeInt8((byte)0);
@@ -36,8 +38,8 @@ public class BoolColumn extends Column<Boolean> {
 
     public void addAll(Boolean[] values) {
         ensureSpace(values.length);
-        for (int n = 0; n < values.length; n++) {
-            if ((values[n] != null) && values[n])
+        for (Boolean value : values) {
+            if ((value != null) && value)
                 data[length / 0x20] |= 1 << ((length % 0x20) & 0x1F);
             length++;
         }

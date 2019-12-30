@@ -1,6 +1,7 @@
 package serialization;
 
 import java.util.*;
+import java.io.IOException;
 
 
 // String column.
@@ -15,16 +16,16 @@ public class StringColumn extends Column<String> {
         return TYPE;
     }
 
-    public StringColumn() {
-        data = new String[100];
+    public StringColumn(String path) throws IOException {
+        super(path);
     }
 
-    public StringColumn(String[] values) {
+    public StringColumn(String path, String[] values) {
         data = new String[100];
         addAll(values);
     }
 
-    public void encode(BufferAccessor buf) {
+    public void encode(BufferAccessor buf) throws IOException {
         categorize();
         buf.writeInt32(0);
         buf.writeStringList(categories.toArray(new String[0]));
@@ -52,7 +53,7 @@ public class StringColumn extends Column<String> {
         }
     }
 
-    public int comparer(Integer o1, Integer o2) {
+    private int comparer(Integer o1, Integer o2) {
         if (data[o1] == null && data[o2] == null) return 0;
         if (data[o1] == null) return 1;
         if (data[o2] == null) return -1;

@@ -27,7 +27,6 @@ public class GrokConnect {
             logger.setLevel(Level.ERROR);
 
             port(port);
-            //secure(keystoreFilePath, keystorePassword, truststoreFilePath, truststorePassword);
             connectorsModule();
 
             System.out.printf("grok_connect: Running on %s\n", uri);
@@ -40,7 +39,7 @@ public class GrokConnect {
         }
     }
 
-    public static void connectorsModule() {
+    private static void connectorsModule() {
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(Property.class, new PropertyAdapter())
                 .create();
@@ -64,6 +63,7 @@ public class GrokConnect {
                 result.execTime = execTime;
                 result.columns = dataFrame.columns.size();
                 result.rows = dataFrame.rowCount;
+
                 // TODO Write to result log there
 
                 System.out.printf("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
@@ -160,10 +160,9 @@ public class GrokConnect {
             return gson.toJson(dataSources);
         });
 
-        before((request, response) -> {
-            System.out.printf("%s: %s - %s\n", DateTime.now().toString("yyyy-MM-dd hh:mm:ss"),
-                    request.requestMethod(), request.pathInfo());
-        });
+        before((request, response) ->
+                System.out.printf("%s: %s - %s\n", DateTime.now().toString("yyyy-MM-dd hh:mm:ss"),
+                        request.requestMethod(), request.pathInfo()));
 
         get("/info", (request, response) -> {
             GrokConnect s = new GrokConnect();
@@ -176,7 +175,7 @@ public class GrokConnect {
         });
     }
 
-    public static void buildResponse(Response response, byte[] bytes) throws Throwable {
+    private static void buildResponse(Response response, byte[] bytes) throws Throwable {
         response.type(MediaType.APPLICATION_OCTET_STREAM);
         response.raw().setContentLength(bytes.length);
         response.status(Status.SUCCESS_OK.getCode());

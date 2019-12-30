@@ -1,234 +1,224 @@
 package serialization;
 
+import java.io.*;
 import java.util.*;
 import java.lang.Math;
 import java.nio.charset.*;
+import java.nio.file.*;
+import org.apache.commons.io.IOUtils;
 
 
 // A convenient class for binary data serialization.
 public class BufferAccessor {
+    private static final int DEFAULT_BUFFER_SIZE = 1048576;
+
     // Internal data storage.
-    byte[] buf;
+    DataOutputStream stream;
+    String path;
 
-    // A view to the storage (convenient for casting content to different types).
-    ByteData view;
-
-    // Current position in the buffer. All read/write methods use it.
+    // Current position in the buffer.
     public int bufPos = 0;
 
     // Version of format.
-    public static final String VERSION = "0.1.0-21a23d8e";
+    static final String VERSION = "0.1.0-21a23d8e";
 
-    public static final int TYPE = 0xA000;
-    public static final int LIST = 0x0100;
+    private static final int TYPE = 0xA000;
+    private static final int LIST = 0x0100;
 
-    public static final int STRING = 1;
-    public static final int FLOAT_32 = 2;
-    public static final int UINT_8 = 3;
-    public static final int UINT_16 = 4;
-    public static final int UINT_32 = 5;
-    public static final int INT_8 = 6;
-    public static final int INT_16 = 7;
-    public static final int INT_32 = 8;
-    public static final int BOOL = 9;
-    public static final int FLOAT_64 = 10;
+    private static final int STRING = 1;
+    private static final int FLOAT_32 = 2;
+    private static final int UINT_8 = 3;
+    private static final int UINT_16 = 4;
+    private static final int UINT_32 = 5;
+    private static final int INT_8 = 6;
+    private static final int INT_16 = 7;
+    private static final int INT_32 = 8;
+    //private static final int BOOL = 9;
+    private static final int FLOAT_64 = 10;
 
-    public static final int TYPE_COLUMN = TYPE + 40;
-    public static final int TYPE_DATA_FRAME = TYPE + 41;
-    public static final int TYPE_STRING_MAP = TYPE + 42;
+    private static final int TYPE_COLUMN = TYPE + 40;
+    private static final int TYPE_DATA_FRAME = TYPE + 41;
+    private static final int TYPE_STRING_MAP = TYPE + 42;
 
-    public static final int TYPE_FLOAT_32_LIST = TYPE + LIST + FLOAT_32;
-    public static final int TYPE_FLOAT_64_LIST = TYPE + LIST + FLOAT_64;
-    public static final int TYPE_UINT_8_LIST = TYPE + LIST + UINT_8;
-    public static final int TYPE_UINT_16_LIST = TYPE + LIST + UINT_16;
-    public static final int TYPE_UINT_32_LIST = TYPE + LIST + UINT_32;
-    public static final int TYPE_INT_8_LIST = TYPE + LIST + INT_8;
-    public static final int TYPE_INT_16_LIST = TYPE + LIST + INT_16;
-    public static final int TYPE_INT_32_LIST = TYPE + LIST + INT_32;
-    public static final int TYPE_STRING_LIST = TYPE + LIST + STRING;
-    public static final int TYPE_COLUMN_LIST = LIST | TYPE_COLUMN;
-    public static final int TYPE_DATA_FRAME_LIST = LIST | TYPE_DATA_FRAME;
-
-    static Map<Integer, String> _typeNames = new HashMap<Integer, String>() {{
-        put(BOOL, "Bool");
-        put(STRING, "String");
-        put(FLOAT_32, "Float32");
-        put(FLOAT_64, "Float64");
-        put(UINT_8, "Uint8");
-        put(UINT_16, "Uint16");
-        put(UINT_32, "Uint32");
-        put(INT_32, "Int32");
-        put(TYPE_COLUMN, "Column");
-        put(TYPE_DATA_FRAME, "DataFrame");
-        put(TYPE_STRING_MAP, "Map<String, String>");
-    }};
+    private static final int TYPE_FLOAT_32_LIST = TYPE + LIST + FLOAT_32;
+    private static final int TYPE_FLOAT_64_LIST = TYPE + LIST + FLOAT_64;
+    private static final int TYPE_UINT_8_LIST = TYPE + LIST + UINT_8;
+    private static final int TYPE_UINT_16_LIST = TYPE + LIST + UINT_16;
+    private static final int TYPE_UINT_32_LIST = TYPE + LIST + UINT_32;
+    private static final int TYPE_INT_8_LIST = TYPE + LIST + INT_8;
+    private static final int TYPE_INT_16_LIST = TYPE + LIST + INT_16;
+    private static final int TYPE_INT_32_LIST = TYPE + LIST + INT_32;
+    private static final int TYPE_STRING_LIST = TYPE + LIST + STRING;
+    //private static final int TYPE_COLUMN_LIST = LIST | TYPE_COLUMN;
+    //private static final int TYPE_DATA_FRAME_LIST = LIST | TYPE_DATA_FRAME;
 
     // Writes two bytes that determine the type of the entity that follows.
-    void writeTypeCode(int typeCode) {
+    private void writeTypeCode(int typeCode) throws IOException {
         writeInt16((short) typeCode);
     }
 
-    public BufferAccessor() {
-        buf = new byte[100];
-        view = new ByteData(buf);
+    public BufferAccessor(String path) throws IOException {
+        this.path = path;
+        stream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(path), DEFAULT_BUFFER_SIZE));
     }
 
-    public BufferAccessor(byte[] list) {
-        buf = list;
-        view = new ByteData(buf);
-    }
+//    public BufferAccessor(String byte[] list) throws IOException {
+//        buf = list;
+//        view = new ByteData(buf);
+//    }
 
-    void writeString(String value) {
+    void writeString(String value) throws IOException {
         byte[] bytes = value == null ? null : value.getBytes(Charset.forName("UTF-8"));
         writeUint8List(bytes);
     }
 
-    void writeInt8(byte value) {
-        _ensureSpace(1);
-        view.setInt8((bufPos += 1) - 1, value);
+    void writeInt8(byte value) throws IOException {
+        stream.writeByte(value);
+        bufPos++;
     }
 
-    void writeInt16(short value) {
-        _ensureSpace(2);
-        view.setInt16((bufPos += 2) - 2, value);
+    void writeInt16(short value) throws IOException {
+        //stream.writeShort(value);
+        stream.writeByte((byte)value);
+        stream.writeByte((byte)(value >> 8));
+        bufPos += 2;
     }
 
-    public void writeInt32(int value) {
-        _ensureSpace(4);
-        view.setInt32((bufPos += 4) - 4, value);
+    void writeInt32(int value) throws IOException {
+        //stream.writeInt(value);
+        stream.writeByte((byte)value);
+        stream.writeByte((byte)(value >> 8));
+        stream.writeByte((byte)(value >> 16));
+        stream.writeByte((byte)(value >> 24));
+        bufPos += 4;
     }
 
-    public void writeInt64(long value) {
-        _ensureSpace(8);
-        view.setFloat64(bufPos, (double) value);
+    void writeInt64(long value) throws IOException {
+        //stream.writeDouble((double)value);
+        writeFloat64((double)value);
+        //bufPos += 8;
+    }
+
+    void writeFloat32(float value) throws IOException {
+        //stream.writeFloat(value);
+        int bits = Float.floatToIntBits(value);
+        stream.writeByte((byte)bits);
+        stream.writeByte((byte)(bits >> 8));
+        stream.writeByte((byte)(bits >> 16));
+        stream.writeByte((byte)(bits >> 24));
+        bufPos += 4;
+    }
+
+    void writeFloat64(double value) throws IOException {
+        //stream.writeDouble(value);
+        long bits = Double.doubleToLongBits(value);
+        stream.writeByte((byte)bits);
+        stream.writeByte((byte)(bits >> 8));
+        stream.writeByte((byte)(bits >> 16));
+        stream.writeByte((byte)(bits >> 24));
+        stream.writeByte((byte)(bits >> 32));
+        stream.writeByte((byte)(bits >> 40));
+        stream.writeByte((byte)(bits >> 48));
+        stream.writeByte((byte)(bits >> 56));
         bufPos += 8;
     }
 
-    void writeFloat32(float value) {
-        _ensureSpace(4);
-        view.setFloat32((bufPos += 4) - 4, value);
-    }
-
-    void writeFloat64(double value) {
-        _ensureSpace(8);
-        view.setFloat64((bufPos += 8) - 8, value);
-    }
-
-    public void writeFloat32List(float[] values, int... idxs) {
+    void writeFloat32List(float[] values, int... idxs) throws IOException {
         int start = (idxs.length > 0) ? idxs[0] : 0;
         int count = (idxs.length > 1) ? idxs[1] : values.length - start;
 
         writeTypeCode(TYPE_FLOAT_32_LIST);
-        _ensureSpace(8 + count * 4);
 
         writeInt64(count);
         for (int i = 0; i < count; i++)
-            view.setFloat32(bufPos + i * 4, values[start + i]);
+            writeFloat32(values[start + i]);
+    }
+
+    void writeFloat32Stream(FileInputStream float32stream, int count) throws IOException {
+        writeTypeCode(TYPE_FLOAT_32_LIST);
+        writeInt64(count);
+        IOUtils.copy(float32stream, stream);
         bufPos += count * 4;
     }
 
-    public void writeFloat64List(double[] values, int... idxs) {
+    void writeFloat64List(double[] values, int... idxs) throws IOException {
         int start = (idxs.length > 0) ? idxs[0] : 0;
         int count = (idxs.length > 1) ? idxs[1] : values.length - start;
 
         writeTypeCode(TYPE_FLOAT_64_LIST);
-        _ensureSpace(8 + count * 8);
 
         writeInt64(count);
         for (int i = 0; i < count; i++)
-            view.setFloat64(bufPos + i * 8, values[start + i]);
+            stream.writeDouble(values[start + i]);
         bufPos += count * 8;
     }
 
-    void writeUint8List(byte[] values, int... idxs) {
+    private void writeBytesList(byte[] values, int... idxs) throws IOException {
+        if (values == null) {
+            writeInt64(-1);
+            return;
+        }
+
+        int start = (idxs.length > 0) ? idxs[0] : 0;
+        int count = (idxs.length > 1) ? idxs[1] : values.length - start;
+
+        writeInt64(count);
+        for (int i = 0; i < count; i++)
+            stream.writeByte(values[start + i]);
+        bufPos += count;
+    }
+
+    void writeUint8List(byte[] values, int... idxs) throws IOException  {
         writeTypeCode(TYPE_UINT_8_LIST);
-        if (values == null) {
-            writeInt64(-1);
-            return;
-        }
-
-        int start = (idxs.length > 0) ? idxs[0] : 0;
-        int count = (idxs.length > 1) ? idxs[1] : values.length - start;
-
-        _ensureSpace(8 + count);
-
-        writeInt64(count);
-        for (int i = 0; i < count; i++)
-            view.setInt8(bufPos + i, values[start + i]);
-        bufPos += count;
+        writeBytesList(values, idxs);
     }
 
-    void writeInt8List(byte[] values, int... idxs) {
+    void writeInt8List(byte[] values, int... idxs) throws IOException {
         writeTypeCode(TYPE_INT_8_LIST);
-        if (values == null) {
-            writeInt64(-1);
-            return;
-        }
+        writeBytesList(values, idxs);
+    }
 
+    private void writeShortList(short[] values, int... idxs) throws IOException {
         int start = (idxs.length > 0) ? idxs[0] : 0;
         int count = (idxs.length > 1) ? idxs[1] : values.length - start;
-
-        _ensureSpace(8 + count);
 
         writeInt64(count);
         for (int i = 0; i < count; i++)
-            view.setInt8(bufPos + i, values[start + i]);
-        bufPos += count;
+            stream.writeShort(values[start + i]);
+        bufPos += count * 2;
     }
 
-    void writeInt16List(short[] values, int... idxs) {
-        int start = (idxs.length > 0) ? idxs[0] : 0;
-        int count = (idxs.length > 1) ? idxs[1] : values.length - start;
-
+    void writeInt16List(short[] values, int... idxs) throws IOException {
         writeTypeCode(TYPE_INT_16_LIST);
-        _ensureSpace(8 + count * 2);
-
-        writeInt64(count);
-        for (int i = 0; i < count; i++)
-            view.setInt16(bufPos + i * 2, values[start + i]);
-        bufPos += count * 2;
+        writeShortList(values, idxs);
     }
 
-    void writeUint16List(short[] values, int... idxs) {
-        int start = (idxs.length > 0) ? idxs[0] : 0;
-        int count = (idxs.length > 1) ? idxs[1] : values.length - start;
-
+    void writeUint16List(short[] values, int... idxs) throws IOException {
         writeTypeCode(TYPE_UINT_16_LIST);
-        _ensureSpace(8 + count * 2);
-
-        writeInt64(count);
-        for (int i = 0; i < count; i++)
-            view.setInt16(bufPos + i * 2, values[start + i]);
-        bufPos += count * 2;
+        writeShortList(values, idxs);
     }
 
-    public void writeInt32List(int[] values, int... idxs) {
+    private void writeIntList(int[] values, int... idxs) throws IOException {
         int start = (idxs.length > 0) ? idxs[0] : 0;
         int count = (idxs.length > 1) ? idxs[1] : values.length - start;
 
+        writeInt64(count);
+        for (int i = 0; i < count; i++)
+            stream.writeInt(values[start + i]);
+        bufPos += count * 4;
+    }
+
+    void writeInt32List(int[] values, int... idxs) throws IOException {
         writeTypeCode(TYPE_INT_32_LIST);
-        _ensureSpace(8 + count * 4);
-
-        writeInt64(count);
-        for (int i = 0; i < count; i++)
-            view.setInt32(bufPos + i * 4, values[start + i]);
-        bufPos += count * 4;
+        writeIntList(values, idxs);
     }
 
-    public void writeUint32List(int[] values, int... idxs) {
-        int start = (idxs.length > 0) ? idxs[0] : 0;
-        int count = (idxs.length > 1) ? idxs[1] : values.length - start;
-
+    void writeUint32List(int[] values, int... idxs) throws IOException {
         writeTypeCode(TYPE_UINT_32_LIST);
-        _ensureSpace(8 + count * 4);
-
-        writeInt64(count);
-        for (int i = 0; i < count; i++)
-            view.setInt32(bufPos + i * 4, values[start + i]);
-        bufPos += count * 4;
+        writeIntList(values, idxs);
     }
 
-    public void writeStringList(String[] values, int... idxs) {
+    void writeStringList(String[] values, int... idxs) throws IOException {
         writeTypeCode(TYPE_STRING_LIST);
         int start = (idxs.length > 0) ? idxs[0] : 0;
         int count = (idxs.length > 1) ? idxs[1] : values.length - start;
@@ -241,13 +231,13 @@ public class BufferAccessor {
             if (str != null) {
                 lengths[n] = str.length();
                 byte[] bytes = str.getBytes(Charset.forName("UTF-8"));
-                _ensureSpace(bytes.length);
                 for (int m = 0; m < bytes.length; m++)
-                    view.setInt8(bufPos + m, bytes[m]);
+                    stream.writeByte(bytes[m]);
                 bufPos += bytes.length;
             } else
                 lengths[n] = -1;
         }
+        // TODO Issue for Stream! Fix it
         int end = bufPos;
         bufPos = begin;
         writeInt64(end - begin - 8);
@@ -255,7 +245,7 @@ public class BufferAccessor {
         writeInt32List(lengths);
     }
 
-    void writeColumn(Column col) {
+    void writeColumn(Column col) throws IOException {
         writeTypeCode(TYPE_COLUMN);
         writeString(col.name);
         writeString(col.getType());
@@ -264,7 +254,7 @@ public class BufferAccessor {
     }
 
     // Serializes a [DataFrame]. It can be null. Returns columns offsets [offsets].
-    public int[] writeDataFrame(DataFrame dataFrame) {
+    int[] writeDataFrame(DataFrame dataFrame) throws IOException {
         writeTypeCode(TYPE_DATA_FRAME);
         writeInt64((dataFrame.rowCount == null) ? -1 : dataFrame.rowCount);
         writeInt64(dataFrame.columns.size());
@@ -280,7 +270,7 @@ public class BufferAccessor {
         return offsets;
     }
 
-    void writeStringMap(Map<String, String> map) {
+    void writeStringMap(Map<String, String> map) throws IOException {
         writeTypeCode(TYPE_STRING_MAP);
 
         if (map == null) {
@@ -295,35 +285,26 @@ public class BufferAccessor {
         }
     }
 
-    void _ensureSpace(int extraLength) {
-        if (bufPos + extraLength > buf.length) {
-            byte[] newBuf = new byte[buf.length * 2 + Math.max(0, bufPos + extraLength - buf.length * 2)];
-            System.arraycopy(buf, 0, newBuf, 0, buf.length);
-            buf = newBuf;
-            view = new ByteData(buf);
-        }
-    }
-
-    public byte[] toUint8List() {
-        byte[] result = new byte[bufPos];
-        for (int i = 0; i < bufPos; i++)
-            result[i] = buf[i];
-        return result;
+    public byte[] toUint8List() throws IOException {
+        stream.close();
+        return IOUtils.toByteArray(new FileInputStream(path));
     }
 
     // Inserts space into buffer on position [pos] with size [size].
-    void _insert(int pos, int size) {
+    private void _insert(int pos, int size) {
+        // TODO Deprecate
+        /*
         _ensureSpace(size);
         for (int i = bufPos - 1; i >= pos; i--)
             buf[i + size] = buf[i];
         bufPos += size;
+        */
     }
 
     // Get size of buffer required to write [Uint8List] list to it.
     static int sizeUint8List(byte[] value) {
         // Type code + Length + Data
-        int size = 2 + 8 + ((value == null) ? 0 : value.length);
-        return size;
+        return 2 + 8 + ((value == null) ? 0 : value.length);
     }
 
     // Get size of buffer required to write String to it.
@@ -332,15 +313,8 @@ public class BufferAccessor {
         return sizeUint8List(bytes);
     }
 
-    // Get size of buffer required to write [Int32List] list to it.
-    static int sizeInt32List(int[] value) {
-        // Type code + Length + Data
-        int size = 2 + 8 + ((value == null) ? 0 : value.length * 4);
-        return size;
-    }
-
     // Gets buffer as byte array with header information [header].
-    public void insertStringHeader(String header) {
+    public void insertStringHeader(String header) throws IOException {
         _insert(0, sizeString(header));
         int _bufPos = bufPos;
         bufPos = 0;
@@ -348,11 +322,7 @@ public class BufferAccessor {
         bufPos = _bufPos;
     }
 
-    // Writes raw bytes to buffer with no overhead.
-    void writeRawBytes(byte[] bytes) {
-        _ensureSpace(bytes.length);
-        for (int i = 0; i < bytes.length; i++)
-            view.setInt8(bufPos + i, bytes[i]);
-        bufPos += bytes.length;
+    public void close() throws IOException {
+        stream.close();
     }
 }

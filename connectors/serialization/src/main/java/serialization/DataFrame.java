@@ -1,6 +1,7 @@
 package serialization;
 
 import java.util.*;
+import java.io.IOException;
 
 
 // Data frame.
@@ -25,8 +26,8 @@ public class DataFrame {
         }
     }
 
-    public byte[] toByteArray() {
+    public byte[] toByteArray(String path) throws IOException {
         DataFrame[] tables = {this};
-        return (new TablesBlob(tables)).toByteArray();
+        return (new TablesBlob(path, tables)).toByteArray();
     }
 }

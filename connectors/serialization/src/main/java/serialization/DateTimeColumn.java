@@ -1,6 +1,7 @@
 package serialization;
 
 import java.time.*;
+import java.io.IOException;
 
 
 // Data time column.
@@ -23,12 +24,12 @@ public class DateTimeColumn extends Column<Double> {
         addAll(values);
     }
 
-    public void encode(BufferAccessor buf) {
+    public void encode(BufferAccessor buf) throws IOException {
         buf.writeInt32(3); // Encoder ID
         buf.writeFloat64List(data, 0, length);
     }
 
-    private void rawEncoder(BufferAccessor buf) {
+    private void rawEncoder(BufferAccessor buf) throws IOException {
         // Convert to separate vectors
         short[] year = new short[length];
         byte[] month = new byte[length];
@@ -112,14 +113,14 @@ public class DateTimeColumn extends Column<Double> {
         return array;
     }
 
-    private static void writeShortArray(BufferAccessor buf, short[] array) {
+    private static void writeShortArray(BufferAccessor buf, short[] array) throws IOException {
         buf.writeInt8((byte)((array != null) ? 1 : 0));
         buf.writeInt8((byte)0); // Archive
         if (array != null)
             buf.writeInt16List(array);
     }
 
-    private static void writeByteArray(BufferAccessor buf, byte[] array) {
+    private static void writeByteArray(BufferAccessor buf, byte[] array) throws IOException {
         buf.writeInt8((byte)((array != null) ? 1 : 0));
         buf.writeInt8((byte)0); // Archive
         if (array != null)

@@ -1,5 +1,7 @@
 package serialization;
 
+import java.io.IOException;
+
 
 // Integer column.
 public class IntColumn extends Column<Integer> {
@@ -21,7 +23,7 @@ public class IntColumn extends Column<Integer> {
         addAll(values);
     }
 
-    public void encode(BufferAccessor buf) {
+    public void encode(BufferAccessor buf) throws IOException {
         buf.writeInt32(1);
         buf.writeInt8((byte)0);
         buf.writeInt32List(data, 0, length);
