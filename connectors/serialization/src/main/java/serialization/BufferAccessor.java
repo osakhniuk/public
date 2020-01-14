@@ -2,9 +2,8 @@ package serialization;
 
 import java.io.*;
 import java.util.*;
-import java.lang.Math;
 import java.nio.charset.*;
-import java.nio.file.*;
+
 import org.apache.commons.io.IOUtils;
 
 
@@ -128,7 +127,7 @@ public class BufferAccessor {
             writeFloat32(values[start + i]);
     }
 
-    void writeFloat32ListAsStream(FileInputStream float32stream, int count) throws IOException {
+    void writeFloat32ListFromStream(FileInputStream float32stream, int count) throws IOException {
         writeTypeCode(TYPE_FLOAT_32_LIST);
         writeInt64(count);
         IOUtils.copy(float32stream, stream);
@@ -144,6 +143,13 @@ public class BufferAccessor {
         writeInt64(count);
         for (int i = 0; i < count; i++)
             stream.writeDouble(values[start + i]);
+        bufPos += count * 8;
+    }
+
+    void writeFloat64ListFromStream(FileInputStream float64stream, int count) throws IOException {
+        writeTypeCode(TYPE_FLOAT_64_LIST);
+        writeInt64(count);
+        IOUtils.copy(float64stream, stream);
         bufPos += count * 8;
     }
 
@@ -211,20 +217,20 @@ public class BufferAccessor {
         writeIntList(values, idxs);
     }
 
-    void writeIntListAsStream(FileInputStream int32stream, int count) throws IOException {
+    void writeIntListFromStream(FileInputStream int32stream, int count) throws IOException {
         writeInt64(count);
         IOUtils.copy(int32stream, stream);
         bufPos += count * 4;
     }
 
-    void writeInt32ListAsStream(FileInputStream int32stream, int count) throws IOException {
+    void writeInt32ListFromStream(FileInputStream int32stream, int count) throws IOException {
         writeTypeCode(TYPE_INT_32_LIST);
-        writeIntListAsStream(int32stream, count);
+        writeIntListFromStream(int32stream, count);
     }
 
-    void writeUint32ListAsStream(FileInputStream int32stream, int count) throws IOException {
+    void writeUint32ListFromStream(FileInputStream int32stream, int count) throws IOException {
         writeTypeCode(TYPE_UINT_32_LIST);
-        writeIntListAsStream(int32stream, count);
+        writeIntListFromStream(int32stream, count);
     }
 
     void writeStringList(String[] values, int... idxs) throws IOException {

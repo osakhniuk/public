@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 import org.junit.Test;
 import java.nio.file.*;
+import java.util.function.*;
+
 import static org.junit.Assert.*;
 
 
@@ -19,13 +21,16 @@ public class SerializationTest {
 
         Path tablePath = Paths.get(tempDir, UUID.randomUUID().toString());
         Files.createDirectories(tablePath);
+        
+        Function<String, String> nameToPath = (name) -> Paths.get(tablePath.toString(), name + ".bin").toString();
 
         List<Column> columns = new ArrayList<>(5);
-        columns.add(new FloatColumn(Paths.get(tablePath.toString(), "double").toString(), new Float[] {1.0F, 2.0F, 3.0F, 4.0F}));
-        columns.add(new IntColumn(Paths.get(tablePath.toString(), "int").toString(), new Integer[] {1, 2, 3, 4}));
+        columns.add(new FloatColumn(nameToPath.apply("double"), new Float[] {1.0F, 2.0F, 3.0F, 4.0F}));
+        columns.add(new IntColumn(nameToPath.apply( "int"), new Integer[] {1, 2, 3, 4}));
         //columns.add(new StringColumn(new String[] {"A", "B", "C", "D"}));
-        columns.add(new BoolColumn(Paths.get(tablePath.toString(), "bool").toString(), new Boolean[] {true, false, true, false}));
-        columns.add(new DateTimeColumn(new Double[] {1099511627776000.0, 2099511627777000.0, -62135607600000000.0, -62135607600000000.0}));
+        columns.add(new BoolColumn(nameToPath.apply( "bool"), new Boolean[] {true, false, true, false}));
+        columns.add(new DateTimeColumn(nameToPath.apply( "datetime"),
+                new Double[] {1099511627776000.0, 2099511627777000.0, -62135607600000000.0, -62135607600000000.0}));
         //columns.add(new BigIntColumn(new String[] {"1234567890", "2345678901", "3456789012", "4567890123"}));
 
         columns.get(0).name = "double";
@@ -37,7 +42,7 @@ public class SerializationTest {
 
         DataFrame df = new DataFrame();
         df.addColumns(columns);
-        byte[] bytes = df.toByteArray(Paths.get(tablePath.toString(), "table").toString());
+        byte[] bytes = df.toByteArray(nameToPath.apply( "table"));
 
         Files.createDirectories(Paths.get("target"));
         String path = "target/blob.bin";

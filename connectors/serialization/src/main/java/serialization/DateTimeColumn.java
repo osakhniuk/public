@@ -1,7 +1,7 @@
 package serialization;
 
-import java.time.*;
 import java.io.IOException;
+import java.io.FileInputStream;
 
 
 // Data time column.
@@ -9,56 +9,51 @@ public class DateTimeColumn extends Column<Double> {
     private static final String TYPE = Types.DATE_TIME;
     private static final double _doubleNone = -62135607600000000.0;
 
-    private double[] data;
-
     public String getType() {
         return TYPE;
     }
 
-    public DateTimeColumn() {
-        data = new double[100];
+    public DateTimeColumn(String path) throws IOException {
+        super(path);
     }
 
-    public DateTimeColumn(Double[] values) {
-        data = new double[100];
+    public DateTimeColumn(String path, Double[] values) throws IOException {
+        this(path);
         addAll(values);
     }
 
     public void encode(BufferAccessor buf) throws IOException {
+        close();
         buf.writeInt32(3); // Encoder ID
-        buf.writeFloat64List(data, 0, length);
+        buf.writeFloat64ListFromStream(new FileInputStream(path), length);
     }
 
-    public void add(Double value) {
-        ensureSpace(1);
-        setValue(length++, (value != null) ? value : _doubleNone);
+    public void add(Double value) throws IOException {
+        long bits = Double.doubleToLongBits((value != null) ? value : _doubleNone);
+        stream.writeByte((byte)bits);
+        stream.writeByte((byte)(bits >> 8));
+        stream.writeByte((byte)(bits >> 16));
+        stream.writeByte((byte)(bits >> 24));
+        stream.writeByte((byte)(bits >> 32));
+        stream.writeByte((byte)(bits >> 40));
+        stream.writeByte((byte)(bits >> 48));
+        stream.writeByte((byte)(bits >> 56));
+        length++;
     }
 
-    public void addAll(Double[] values) {
-        ensureSpace(values.length);
-        for (int n = 0; n < values.length; n++)
-            setValue(length++, (values[n] != null) ? values[n] : _doubleNone);
+    public void addAll(Double[] values) throws IOException {
+        for (Double value : values)
+            add(value);
     }
 
     @Override
     public long memoryInBytes() {
-        return data.length * 8;
-    }
-
-    private void ensureSpace(int extraLength) {
-        if (length + extraLength > data.length) {
-            double[] newData = new double[data.length * 2 + Math.max(0, length + extraLength - data.length * 2)];
-            System.arraycopy(data, 0, newData, 0, data.length);
-            data = newData;
-        }
-    }
-
-    private void setValue(int idx, Double value) {
-        data[idx] = value;
+        return length * 8;
     }
 
     /*
     // Note: Following code is saved only for information purposes
+    //import java.time.*;
     private void rawEncoder(BufferAccessor buf) throws IOException {
         // Convert to separate vectors
         short[] year = new short[length];

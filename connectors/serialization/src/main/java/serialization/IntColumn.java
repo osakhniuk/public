@@ -26,7 +26,7 @@ public class IntColumn extends Column<Integer> {
         close();
         buf.writeInt32(1);  // Encoder ID
         buf.writeInt8((byte)0);   // Archive
-        buf.writeInt32ListAsStream(new FileInputStream(path), length);
+        buf.writeInt32ListFromStream(new FileInputStream(path), length);
     }
 
     public void add(Integer value) throws IOException {

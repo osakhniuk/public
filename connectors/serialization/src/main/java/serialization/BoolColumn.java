@@ -30,7 +30,7 @@ public class BoolColumn extends Column<Boolean> {
         buf.writeInt32(1);  // Encoder ID
         buf.writeInt64(length);
         buf.writeInt8((byte)0);
-        buf.writeUint32ListAsStream(new FileInputStream(path), ((length + 0x1F) / 0x20));
+        buf.writeUint32ListFromStream(new FileInputStream(path), ((length + 0x1F) / 0x20));
     }
 
     public void add(Boolean value) throws IOException {

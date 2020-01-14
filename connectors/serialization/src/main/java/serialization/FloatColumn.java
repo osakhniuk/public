@@ -26,7 +26,7 @@ public class FloatColumn extends Column<Float> {
         close();
         buf.writeInt32(1);  // Encoder ID
         buf.writeInt8((byte)0);   // Archive
-        buf.writeFloat32ListAsStream(new FileInputStream(path), length);
+        buf.writeFloat32ListFromStream(new FileInputStream(path), length);
     }
 
     public void add(Float value) throws IOException {
