@@ -9,8 +9,6 @@ public class IntColumn extends Column<Integer> {
     private static final String TYPE = Types.INT;
     private static final int None = -2147483648;
 
-    private int[] data;
-
     public String getType() {
         return TYPE;
     }
@@ -47,6 +45,6 @@ public class IntColumn extends Column<Integer> {
 
     @Override
     public long memoryInBytes() {
-        return data.length * 4;
+        return length * 4;
     }
 }
