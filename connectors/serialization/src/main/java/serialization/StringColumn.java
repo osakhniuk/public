@@ -20,8 +20,8 @@ public class StringColumn extends Column<String> {
         super(path);
     }
 
-    public StringColumn(String path, String[] values) {
-        data = new String[100];
+    public StringColumn(String path, String[] values) throws IOException {
+        this(path);
         addAll(values);
     }
 
@@ -29,7 +29,7 @@ public class StringColumn extends Column<String> {
         categorize();
         buf.writeInt32(0);
         buf.writeStringList(categories.toArray(new String[0]));
-        IntColumn col = new IntColumn();
+        IntColumn col = new IntColumn(path + "-idxs");
         col.addAll(idxs);
         col.encode(buf);
     }

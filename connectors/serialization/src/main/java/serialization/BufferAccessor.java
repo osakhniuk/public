@@ -78,14 +78,12 @@ public class BufferAccessor {
     }
 
     void writeInt16(short value) throws IOException {
-        //stream.writeShort(value);
         stream.writeByte((byte)value);
         stream.writeByte((byte)(value >> 8));
         bufPos += 2;
     }
 
     void writeInt32(int value) throws IOException {
-        //stream.writeInt(value);
         stream.writeByte((byte)value);
         stream.writeByte((byte)(value >> 8));
         stream.writeByte((byte)(value >> 16));
@@ -94,13 +92,10 @@ public class BufferAccessor {
     }
 
     void writeInt64(long value) throws IOException {
-        //stream.writeDouble((double)value);
         writeFloat64((double)value);
-        //bufPos += 8;
     }
 
     void writeFloat32(float value) throws IOException {
-        //stream.writeFloat(value);
         int bits = Float.floatToIntBits(value);
         stream.writeByte((byte)bits);
         stream.writeByte((byte)(bits >> 8));
@@ -110,7 +105,6 @@ public class BufferAccessor {
     }
 
     void writeFloat64(double value) throws IOException {
-        //stream.writeDouble(value);
         long bits = Double.doubleToLongBits(value);
         stream.writeByte((byte)bits);
         stream.writeByte((byte)(bits >> 8));
@@ -134,7 +128,7 @@ public class BufferAccessor {
             writeFloat32(values[start + i]);
     }
 
-    void writeFloat32Stream(FileInputStream float32stream, int count) throws IOException {
+    void writeFloat32ListAsStream(FileInputStream float32stream, int count) throws IOException {
         writeTypeCode(TYPE_FLOAT_32_LIST);
         writeInt64(count);
         IOUtils.copy(float32stream, stream);
@@ -204,8 +198,7 @@ public class BufferAccessor {
 
         writeInt64(count);
         for (int i = 0; i < count; i++)
-            stream.writeInt(values[start + i]);
-        bufPos += count * 4;
+            this.writeInt32(values[start + i]);
     }
 
     void writeInt32List(int[] values, int... idxs) throws IOException {
@@ -216,6 +209,22 @@ public class BufferAccessor {
     void writeUint32List(int[] values, int... idxs) throws IOException {
         writeTypeCode(TYPE_UINT_32_LIST);
         writeIntList(values, idxs);
+    }
+
+    void writeIntListAsStream(FileInputStream int32stream, int count) throws IOException {
+        writeInt64(count);
+        IOUtils.copy(int32stream, stream);
+        bufPos += count * 4;
+    }
+
+    void writeInt32ListAsStream(FileInputStream int32stream, int count) throws IOException {
+        writeTypeCode(TYPE_INT_32_LIST);
+        writeIntListAsStream(int32stream, count);
+    }
+
+    void writeUint32ListAsStream(FileInputStream int32stream, int count) throws IOException {
+        writeTypeCode(TYPE_UINT_32_LIST);
+        writeIntListAsStream(int32stream, count);
     }
 
     void writeStringList(String[] values, int... idxs) throws IOException {

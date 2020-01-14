@@ -22,17 +22,17 @@ public class SerializationTest {
 
         List<Column> columns = new ArrayList<>(5);
         columns.add(new FloatColumn(Paths.get(tablePath.toString(), "double").toString(), new Float[] {1.0F, 2.0F, 3.0F, 4.0F}));
-        //columns.add(new IntColumn(new Integer[] {1, 2, 3, 4}));
+        columns.add(new IntColumn(Paths.get(tablePath.toString(), "int").toString(), new Integer[] {1, 2, 3, 4}));
         //columns.add(new StringColumn(new String[] {"A", "B", "C", "D"}));
-        //columns.add(new BoolColumn(new Boolean[] {true, false, true, false}));
-        //columns.add(new DateTimeColumn(new Double[] {1099511627776000.0, 2099511627777000.0, -62135607600000000.0, -62135607600000000.0}));
+        columns.add(new BoolColumn(new Boolean[] {true, false, true, false}));
+        columns.add(new DateTimeColumn(new Double[] {1099511627776000.0, 2099511627777000.0, -62135607600000000.0, -62135607600000000.0}));
         //columns.add(new BigIntColumn(new String[] {"1234567890", "2345678901", "3456789012", "4567890123"}));
 
         columns.get(0).name = "double";
-//        columns.get(1).name = "int";
+        columns.get(1).name = "int";
 //        columns.get(2).name = "string";
-//        columns.get(3).name = "bool";
-//        columns.get(4).name = "datetime";
+        columns.get(2).name = "bool";
+        columns.get(3).name = "datetime";
 //        columns.get(5).name = "bigint";
 
         DataFrame df = new DataFrame();

@@ -1,6 +1,7 @@
 package serialization;
 
 import java.io.IOException;
+import java.io.FileInputStream;
 
 
 // Integer column.
@@ -14,42 +15,38 @@ public class IntColumn extends Column<Integer> {
         return TYPE;
     }
 
-    public IntColumn() {
-        data = new int[100];
+    public IntColumn(String path) throws IOException  {
+        super(path);
     }
 
-    public IntColumn(Integer[] values) {
-        data = new int[100];
+    public IntColumn(String path, Integer[] values) throws IOException  {
+        this(path);
         addAll(values);
     }
 
     public void encode(BufferAccessor buf) throws IOException {
-        buf.writeInt32(1);
-        buf.writeInt8((byte)0);
-        buf.writeInt32List(data, 0, length);
+        close();
+        buf.writeInt32(1);  // Encoder ID
+        buf.writeInt8((byte)0);   // Archive
+        buf.writeInt32ListAsStream(new FileInputStream(path), length);
     }
 
-    public void add(Integer value) {
-        ensureSpace(1);
-        data[length++] = (value != null) ? value : None;
+    public void add(Integer value) throws IOException {
+        int _value = (value != null) ? value : None;
+        stream.writeByte((byte)_value);
+        stream.writeByte((byte)(_value >> 8));
+        stream.writeByte((byte)(_value >> 16));
+        stream.writeByte((byte)(_value >> 24));
+        length++;
     }
 
-    public void addAll(Integer[] values) {
-        ensureSpace(values.length);
-        for (int n = 0; n < values.length; n++)
-            data[length++] = (values[n] != null) ? values[n] : None;
+    public void addAll(Integer[] values) throws IOException {
+        for (Integer value : values)
+            add(value);
     }
 
     @Override
     public long memoryInBytes() {
         return data.length * 4;
-    }
-
-    private void ensureSpace(int extraLength) {
-        if (length + extraLength > data.length) {
-            int[] newData = new int[data.length * 2 + Math.max(0, length + extraLength - data.length * 2)];
-            System.arraycopy(data, 0, newData, 0, data.length);
-            data = newData;
-        }
     }
 }

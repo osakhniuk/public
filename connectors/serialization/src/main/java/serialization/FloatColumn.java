@@ -26,18 +26,21 @@ public class FloatColumn extends Column<Float> {
         close();
         buf.writeInt32(1);  // Encoder ID
         buf.writeInt8((byte)0);   // Archive
-        buf.writeFloat32Stream(new FileInputStream(path), length);
+        buf.writeFloat32ListAsStream(new FileInputStream(path), length);
     }
 
     public void add(Float value) throws IOException {
-        stream.writeFloat((value != null) ? value : (float)None);
+        int bits = Float.floatToIntBits((value != null) ? value : (float) None);
+        stream.writeByte((byte)bits);
+        stream.writeByte((byte)(bits >> 8));
+        stream.writeByte((byte)(bits >> 16));
+        stream.writeByte((byte)(bits >> 24));
         length++;
     }
 
     public void addAll(Float[] values) throws IOException {
         for (Float value : values)
-            stream.writeFloat((value != null) ? value : (float)None);
-        length += values.length;
+            add(value);
     }
 
     @Override
