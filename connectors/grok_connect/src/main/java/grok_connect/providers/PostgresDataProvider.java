@@ -8,11 +8,16 @@ import grok_connect.connectors_info.*;
 
 
 public class PostgresDataProvider extends JdbcDataProvider {
+    private static final String SYS_SCHEMAS_FILTER =
+            "table_schema != 'pg_catalog' AND table_schema != 'information_schema'";
+
     public PostgresDataProvider() {
         descriptor = new DataSource();
         descriptor.type = "PostgresNet";
         descriptor.description = "Query PostgresNet database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
@@ -39,7 +44,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("org.postgresql.Driver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {
@@ -47,17 +52,23 @@ public class PostgresDataProvider extends JdbcDataProvider {
         return "jdbc:postgresql://" + conn.getServer() + port + "/" + conn.getDb();
     }
 
+    public String getSchemasSql(String db) {
+        return "SELECT DISTINCT table_schema FROM information_schema.columns " +
+                "WHERE table_catalog = '" + db + "' AND " + SYS_SCHEMAS_FILTER;
+    }
+
     public String getSchemaSql(String db, String schema, String table)
     {
-        List<String> filters = new ArrayList<>();
-        filters.add("(table_schema = '" + ((schema != null) ? schema : "public") + "')");
-        filters.add("(table_catalog = '" + db + "')");
+        List<String> filters = new ArrayList<String>() {{
+            add("table_schema = '" + ((schema != null) ? schema : "public") + "'");
+            add("table_catalog = '" + db + "'");
+        }};
         if (table!= null)
-            filters.add("(table_name = '" + table + "')");
+            filters.add("table_name = '" + table + "'");
 
         String whereClause = String.join(" and \n", filters);
 
         return "SELECT table_schema, table_name, column_name, data_type " +
-                "FROM information_schema.columns WHERE " + whereClause;
+                "FROM information_schema.columns WHERE " + SYS_SCHEMAS_FILTER + " AND " + whereClause;
     }
 }

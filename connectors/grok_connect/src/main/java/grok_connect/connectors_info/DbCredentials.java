@@ -8,6 +8,7 @@ public class DbCredentials
 {
     public static final String SERVER = "server";
     public static final String DB = "db";
+    public static final String SCHEMA = "schema";
     public static final String LOGIN = "login";
     public static final String PASSWORD = "password";
     public static final String PORT = "port";
@@ -35,6 +36,9 @@ public class DbCredentials
         add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
         add(new Property(Property.INT_TYPE, DbCredentials.PORT));
         add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+    }};
+
+    public static List<Property> dbCredentialsTemplate = new ArrayList<Property>() {{
         add(new Property(Property.STRING_TYPE, DbCredentials.LOGIN));
         add(new Property(Property.STRING_TYPE, DbCredentials.PASSWORD, new Prop("password")));
     }};

@@ -9,11 +9,16 @@ import grok_connect.connectors_info.*;
 
 
 public class OracleDataProvider extends JdbcDataProvider {
+    private static final String SYS_SCHEMAS_FILTER =
+            "OWNER != 'SYSTEM' AND OWNER != 'CTXSYS' AND OWNER != 'MDSYS' " +
+            "AND OWNER != 'XDB' AND OWNER != 'APEX_040000' AND OWNER != 'SYS'";
+
     public OracleDataProvider() {
         descriptor = new DataSource();
         descriptor.type = "Oracle";
         descriptor.description = "Query Oracle database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
 
         descriptor.typesMap = new HashMap<String, String>() {{
@@ -43,7 +48,8 @@ public class OracleDataProvider extends JdbcDataProvider {
 
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         Class.forName("oracle.jdbc.driver.OracleDriver");
-        return DriverManager.getConnection(getConnectionString(conn), conn.getLogin(), conn.getPassword());
+        System.getProperties().setProperty("oracle.jdbc.J2EE13Compliant", "true");
+        return DriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword());
     }
 
     public String getConnectionString(DataConnection conn) {
@@ -51,16 +57,20 @@ public class OracleDataProvider extends JdbcDataProvider {
         return "jdbc:oracle:thin:@//" + conn.getServer() + port + "/" + conn.getDb();
     }
 
-    public String getSchemaSql(String db, String schema, String table)
-    {
-        List<String> filters = new ArrayList<>();
-        if (table!= null)
-            filters.add("(TABLE_NAME = '" + table + "')");
+    public String getSchemasSql(String db) {
+        return "SELECT OWNER as TABLE_SCHEMA FROM ALL_TAB_COLUMNS WHERE " + SYS_SCHEMAS_FILTER +
+                " GROUP BY OWNER ORDER BY OWNER";
+    }
 
-        String whereClause = " WHERE " + String.join(" AND \n", filters);
+    public String getSchemaSql(String db, String schema, String table) {
+        String whereClause = "WHERE " + SYS_SCHEMAS_FILTER;
 
-        return "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE " +
-                "FROM USER_TAB_COLUMNS" + ((filters.size() > 0) ? whereClause : "");
+        if (table != null)
+            whereClause = whereClause + " AND (TABLE_NAME = '" + table + "')";
+        if (schema != null)
+            whereClause = whereClause + " AND (OWNER = '" + schema + "')";
+
+        return "SELECT OWNER as TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS " + whereClause;
     }
 
     public String limitToSql(String query, Integer limit) {
