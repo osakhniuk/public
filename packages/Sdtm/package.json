@@ -1,8 +1,0 @@
-{
-  "name": "SDTM",
-  "version": "1",
-  "description": "SDTM Viewer",
-  "sources": [
-    "css/sdtm.css"
-  ]
-}
